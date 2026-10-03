@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doubtout - Professor Clear Doubts</title>
+    <!-- Load Tailwind CSS CDN for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom font import and general base styles */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f8ff; /* Light blue background */
+        }
+        
+        /* Custom scrollbar for doubts list */
+        .doubts-list-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+        .doubts-list-scroll::-webkit-scrollbar-thumb {
+            background: #93c5fd; /* Blue-300 */
+            border-radius: 3px;
+        }
+        
+        /* Custom ring color for focus states (Green) */
+        .focus-ring-green {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.5); /* Emerald-500 with transparency */
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Main Header (Dark theme - GREEN) -->
+    <header class="bg-green-700 text-white shadow-xl">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-3">
+                
+                <!-- Logo Block (Green Accent) -->
+                <div class="flex items-center space-x-2">
+                    <svg xmlns="https://www.w3.org/2000/svg" class="h-7 w-7 text-green-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.057l-1.976-.662M12 14l-6.16 3.422a12.083 12.083 0 01-.665-6.479A11.952 11.952 0 0012 20.057l1.976-.662" />
+                    </svg>
+                    <span class="text-xl font-bold tracking-tight text-green-300">DoubtOut - Professor</span>
+                </div>
+
+            </div>
+        </div>
+    </header>
+    
+    <!-- Sub-Navigation / Professor Dashboard Links -->
+    <nav class="bg-white shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-center flex-wrap space-x-4 sm:space-x-8 text-sm sm:text-base">
+            <a href="/professor_dashboard.html" class="text-gray-700 hover:text-green-600 font-semibold transition duration-150">Dashboard</a>
+            <a href="/pending_review.html" class="text-gray-700 hover:text-green-600 font-semibold transition duration-150">Pending Answer Review</a>
+            <a href="/my_solutions.html" class="text-gray-700 hover:text-green-600 font-semibold transition duration-150">My Solutions</a>
+            <a href="clear_doubts.html" class="text-green-600 border-b-2 border-green-600 font-bold transition duration-150">Clear Doubts</a>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <h1 class="text-4xl font-extrabold text-gray-800 text-center mb-4">
+            Unanswered Student Doubts
+        </h1>
+        <p class="text-center text-gray-600 mb-8">
+            Provide expert answers to high-priority student questions to enhance the knowledge base.
+        </p>
+
+        <!-- Metrics & Filter Controls -->
+        <div class="bg-white p-6 rounded-xl shadow-lg mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Total Unanswered (GREEN) -->
+                <div class="bg-green-50 p-4 rounded-xl border border-green-200 text-center">
+                    <p class="text-sm font-medium text-gray-500">Total Doubts Awaiting Answer</p>
+                    <p id="total-doubts" class="text-3xl font-bold text-green-700 mt-1">0</p>
+                </div>
+                
+                <!-- Max Wait Time (RED for high urgency) -->
+                
+            </div>
+        </div>
+
+        <!-- Doubts List Container -->
+        <div class="bg-white p-6 rounded-xl shadow-lg">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4 border-b pb-2">Questions Awaiting Your Expertise</h2>
+            
+            <div id="doubts-list" class="space-y-4 max-h-[60vh] overflow-y-auto doubts-list-scroll">
+                <!-- Unanswered doubt items will be dynamically injected here -->
+            </div>
+            
+            <!-- Empty State -->
+            <div id="empty-state" class="hidden text-center py-16 text-gray-500">
+                <svg class="mx-auto h-12 w-12 text-green-600" xmlns="https://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <p class="mt-2 text-xl font-medium">Clear Sky!</p>
+                <p class="text-sm">There are no unanswered doubts currently pending in the system.</p>
+            </div>
+        </div>
+
+    </main>
+
+    
+    <!-- JavaScript for Data Management and Rendering -->
+    <script>
+let unansweredDoubts = [];
+
+async function loadDoubts() {
+    const professor = JSON.parse(localStorage.getItem("doubtoutUser"));
+
+    if (!professor || professor.role !== "professor") {
+        window.location.href = "login1.html";
+        return;
+    }
+
+    try {
+        const res = await fetch(
+            `https://doubtout-website.onrender.com/api/professor/doubts/${professor.user_id}`
+        );
+        const data = await res.json();
+
+        unansweredDoubts = data.doubts.map(d => ({
+            id: d.doubt_id,
+            q_title: d.question,
+            course: d.course,
+            asked_at: new Date(d.created_at).toLocaleDateString(),
+            urgency: "Medium"
+        }));
+
+        document.getElementById("total-doubts").textContent = unansweredDoubts.length;
+        filterDoubts();
+    } catch (err) {
+        console.error("Failed to load doubts", err);
+    }
+}
+
+document.addEventListener("DOMContentLoaded", loadDoubts);
+
+const listContainer = document.getElementById('doubts-list');
+const emptyState = document.getElementById('empty-state');
+const courseFilter = document.getElementById('course-filter');
+
+function createDoubtCard(item) {
+    return `
+        <div class="bg-white p-4 rounded-lg shadow-md border-l-4 border-green-500">
+            <h3 class="text-xl font-semibold">${item.q_title}</h3>
+            <p class="text-sm text-gray-500">${item.course}</p>
+            <p class="text-xs text-gray-400">Asked: ${item.asked_at}</p>
+            <button onclick="simulateAnswer(${item.id})"
+                class="mt-3 px-4 py-2 bg-green-600 text-white rounded-lg">
+                Answer
+            </button>
+        </div>
+    `;
+}
+
+function renderDoubts(items) {
+    listContainer.innerHTML = "";
+
+    if (items.length === 0) {
+        listContainer.classList.add("hidden");
+        emptyState.classList.remove("hidden");
+        return;
+    }
+
+    listContainer.classList.remove("hidden");
+    emptyState.classList.add("hidden");
+
+    items.forEach(item => {
+        listContainer.innerHTML += createDoubtCard(item);
+    });
+}
+
+window.filterDoubts = function () {
+    renderDoubts(unansweredDoubts);
+};
+
+
+window.simulateAnswer = function (id) {
+    const modal = document.createElement("div");
+    modal.className = "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50";
+
+    modal.innerHTML = `
+        <div class="bg-white rounded-xl p-6 w-11/12 max-w-2xl">
+            <h3 class="text-2xl font-bold mb-4">Write Answer</h3>
+            <textarea id="answer-text"
+                class="w-full border-2 rounded-lg p-3"
+                rows="6"></textarea>
+            <div class="flex justify-end gap-3 mt-4">
+                <button onclick="this.closest('.fixed').remove()"
+                    class="px-4 py-2 bg-gray-300 rounded-lg">Cancel</button>
+                <button onclick="submitAnswer(${id})"
+                    class="px-4 py-2 bg-green-600 text-white rounded-lg">Submit</button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+};
+
+async function submitAnswer(doubtId) {
+    const answerText = document.getElementById("answer-text").value.trim();
+    const professor = JSON.parse(localStorage.getItem("doubtoutUser"));
+
+    if (!answerText) {
+        alert("Answer cannot be empty");
+        return;
+    }
+
+    try {
+        const res = await fetch("https://doubtout-website.onrender.com/api/answers", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                doubt_id: doubtId,
+                answer_text: answerText,
+                answered_by: professor.user_id
+            })
+        });
+
+        if (res.ok) {
+            alert("Answer submitted");
+            location.reload();
+        } else {
+            alert("Failed to submit");
+        }
+    } catch (err) {
+        alert("Server error");
+    }
+}
+</script>
+
+</body>
+</html>
